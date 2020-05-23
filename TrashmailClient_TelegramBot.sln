@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrashmailClient_TelegramBot", "TrashmailClient_TelegramBot\TrashmailClient_TelegramBot.csproj", "{B1B321E9-A70B-4974-A25D-C324E89528EB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mail_Crawler", "Mail_Crawler\Mail_Crawler.csproj", "{A82A0825-EC02-48A6-8322-E82166A1C629}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataManager", "DataManager\DataManager.csproj", "{655CF6D0-2CF4-41B4-893A-C094B66613F1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B1B321E9-A70B-4974-A25D-C324E89528EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1B321E9-A70B-4974-A25D-C324E89528EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1B321E9-A70B-4974-A25D-C324E89528EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1B321E9-A70B-4974-A25D-C324E89528EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A82A0825-EC02-48A6-8322-E82166A1C629}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A82A0825-EC02-48A6-8322-E82166A1C629}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A82A0825-EC02-48A6-8322-E82166A1C629}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A82A0825-EC02-48A6-8322-E82166A1C629}.Release|Any CPU.Build.0 = Release|Any CPU
+		{655CF6D0-2CF4-41B4-893A-C094B66613F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{655CF6D0-2CF4-41B4-893A-C094B66613F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{655CF6D0-2CF4-41B4-893A-C094B66613F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{655CF6D0-2CF4-41B4-893A-C094B66613F1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {36984DB1-E492-4279-A37F-E984105262AD}
+	EndGlobalSection
+EndGlobal
