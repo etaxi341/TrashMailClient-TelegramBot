@@ -63,6 +63,7 @@ namespace TrashmailClient_TelegramBot
             while (true)
             {
                 CheckForMails();
+                DeleteOldDbEntries();
 
                 Thread.Sleep(60000); //Sleep one minute
             }
@@ -164,6 +165,22 @@ namespace TrashmailClient_TelegramBot
                 }
             }
             catch { }
+        }
+
+        static void DeleteOldDbEntries()
+        {
+            DatabaseContext db = new DatabaseContext();
+            DateTime ago15Minutes = DateTime.Now.AddMinutes(-15);
+            ActiveMails[] activeMails = db.activemails.Include("subscriber").Where(a => a.endDate < ago15Minutes).ToArray();
+            ReadMails[] readMails = db.readmails.Include("mail").Where(a => a.mail.endDate < ago15Minutes).ToArray();
+
+            db.readmails.RemoveRange(readMails);
+            foreach (ReadMails readMail in readMails)
+            {
+                db.activemails.Remove(readMail.mail);
+            }
+
+            db.SaveChanges();
         }
 
         private static void Bot_OnCallbackQuery(object sender, CallbackQueryEventArgs e)
