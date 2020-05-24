@@ -70,10 +70,8 @@ namespace TrashmailClient_TelegramBot
 
         private static void CheckForMails()
         {
-            DateTime in15Minutes = DateTime.Now.AddMinutes(15);
-
             DatabaseContext db = new DatabaseContext();
-            ActiveMails[] activeMails = db.activemails.Where(a => a.endDate < in15Minutes).ToArray();
+            ActiveMails[] activeMails = db.activemails.Where(a => a.endDate > DateTime.Now).ToArray();
 
             foreach (ActiveMails activeMail in activeMails)
             {
