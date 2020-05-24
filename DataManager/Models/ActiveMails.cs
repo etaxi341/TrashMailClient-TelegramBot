@@ -11,6 +11,7 @@ namespace DataManager.Models
         public long ID { get; set; }
         public string address { get; set; }
         public Subscribers subscriber { get; set; }
+        public int messageID { get; set; }
         public DateTime endDate { get; set; }
     }
 }

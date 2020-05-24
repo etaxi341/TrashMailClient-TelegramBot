@@ -71,7 +71,7 @@ namespace TrashmailClient_TelegramBot
         private static void CheckForMails()
         {
             DatabaseContext db = new DatabaseContext();
-            ActiveMails[] activeMails = db.activemails.Where(a => a.endDate > DateTime.Now).ToArray();
+            ActiveMails[] activeMails = db.activemails.Include("subscriber").Where(a => a.endDate > DateTime.Now).ToArray();
 
             foreach (ActiveMails activeMail in activeMails)
             {
@@ -84,6 +84,22 @@ namespace TrashmailClient_TelegramBot
 
         static void CheckForMail(ActiveMails activeMail)
         {
+            //Update timer
+            try
+            {
+                int timeLeft = (int)((activeMail.endDate - DateTime.Now).TotalMinutes);
+                string suffix = "This mail will be valid for another " + timeLeft + " minutes";
+
+                if (timeLeft <= 1)
+                    suffix = "This mail will be valid for another minute";
+
+                bot.EditMessageTextAsync(
+                    chatId: activeMail.subscriber.chatID,
+                    messageId: activeMail.messageID,
+                    text: activeMail.address + Environment.NewLine + suffix
+                );
+            } catch { }
+
             try
             {
                 IMailService mailServer = MailService.Create(activeMail.address);
@@ -247,15 +263,15 @@ https://www.patreon.com/etaxi341"
                     }
 
                     string generatedMail = MailService.GenerateMail();
-                    bot.SendTextMessageAsync(
+                    var result = bot.SendTextMessageAsync(
                         chatId: chatID,
-                        text: "I will listen on the following mail for 15 minutes: " + generatedMail,
-                        replyMarkup: replyMarkup
-                    );
+                        text: generatedMail + Environment.NewLine + "This mail will be valid for another 15 minutes"
+                    ).Result;
 
                     ActiveMails activeMail = new ActiveMails();
                     activeMail.address = generatedMail;
                     activeMail.subscriber = sub;
+                    activeMail.messageID = result.MessageId;
                     activeMail.endDate = DateTime.Now.AddMinutes(15);
 
                     db.activemails.Add(activeMail);
