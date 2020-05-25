@@ -3,6 +3,7 @@ using DataManager.Models;
 using Mail_Crawler;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -21,6 +22,7 @@ namespace TrashmailClient_TelegramBot
         const string start = "/start";
         const string generate = "/generate";
         const string options = "/options";
+        const string custom = "/custom";
         const string autoconfirm = "Automatically confirm";
         const string show = "Show";
         const string listlinks = "Show only links";
@@ -245,7 +247,16 @@ namespace TrashmailClient_TelegramBot
                 db.subscribers.Add(sub);
             }
 
-            switch (e.Message.Text)
+            string command = e.Message.Text;
+            List<string> commandParameters = new List<string>();
+            if (command.StartsWith("/"))
+            {
+                commandParameters = command.Split(' ').ToList();
+                command = commandParameters[0];
+                commandParameters.RemoveAt(0);
+            }
+
+            switch (command)
             {
                 case start:
                     bot.SendTextMessageAsync(
@@ -257,6 +268,7 @@ Thank you for using the TrashMailClient
 Commands:
 /start - Shows you this text
 /generate - Generates a new mail for you
+/custom - Generate a new custom mail
 /options - Select what I should do with mails
                         
 If you enjoy this service, feel free to support my creator on patreon:
@@ -273,6 +285,7 @@ https://www.patreon.com/etaxi341"
                     break;
                 case generate:
                 case generatemail:
+                case custom:
 
                     var currentlyActiveMails = db.activemails.Where(a => a.endDate > DateTime.Now && a.subscriber == sub).ToArray();
 
@@ -286,7 +299,53 @@ https://www.patreon.com/etaxi341"
                         break;
                     }
 
-                    string generatedMail = MailService.GenerateMail();
+                    string generatedMail = "";
+                    if (command == custom)
+                    {
+                        if (commandParameters.Count > 0)
+                        {
+                            generatedMail = commandParameters[0];
+                        }
+                        else
+                        {
+                            string botText = "This is not how you use this command." + Environment.NewLine + "Try this:" + Environment.NewLine + Environment.NewLine + "/custom <user@domain>" + Environment.NewLine + Environment.NewLine + "Valid domains are:" + Environment.NewLine;
+
+                            string exampleDomain = "";
+                            foreach(var service in MailService.mailProviders.Keys)
+                            {
+                                foreach(string domain in MailService.mailProviders[service])
+                                {
+                                    if (string.IsNullOrEmpty(exampleDomain))
+                                        exampleDomain = domain;
+                                    botText += domain + Environment.NewLine;
+                                }
+                            }
+
+                            botText += "For example:" + Environment.NewLine + "abc123@" + exampleDomain;
+
+
+                            bot.SendTextMessageAsync(
+                                chatId: chatID,
+                                text: botText,
+                                replyMarkup: replyMarkup
+                            );
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        generatedMail = MailService.GenerateMail();
+                    }
+
+                    if (MailService.Create(generatedMail) == null)
+                    {
+                        bot.SendTextMessageAsync(
+                            chatId: chatID,
+                            text: generatedMail + " is not a valid address!"
+                        );
+                        break;
+                    }
+
                     var result = bot.SendTextMessageAsync(
                         chatId: chatID,
                         text: generatedMail + Environment.NewLine + "This mail will be valid for another 15 minutes"

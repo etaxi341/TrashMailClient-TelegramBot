@@ -10,7 +10,7 @@ namespace Mail_Crawler
     public class MailService
     {
         #region MailProvider
-        static readonly Dictionary<string, string[]> mailProviders = new Dictionary<string, string[]>{
+        public static readonly Dictionary<string, string[]> mailProviders = new Dictionary<string, string[]>{
             { "postfach2go",  new string[]{ "postfach2go.de", "mailbox2go.de", "briefkasten2go.de" } },
         };
 
