@@ -8,5 +8,6 @@ namespace Mail_Crawler
         string mailAddress { get; set; }
         List<MailModel> GetMails();
         void ConfirmLinks(MailModel mail);
+        bool DeleteMail(MailModel mail);
     }
 }

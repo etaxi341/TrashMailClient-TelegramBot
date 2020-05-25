@@ -23,6 +23,11 @@ namespace Mail_Crawler
             }
         }
 
+        public virtual bool DeleteMail(MailModel mail)
+        {
+            throw new NotImplementedException();
+        }
+
         public virtual List<MailModel> GetMails()
         {
             throw new NotImplementedException();

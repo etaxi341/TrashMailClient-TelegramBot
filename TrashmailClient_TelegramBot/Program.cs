@@ -174,6 +174,16 @@ namespace TrashmailClient_TelegramBot
             ActiveMails[] activeMails = db.activemails.Where(a => a.endDate < ago15Minutes).ToArray();
             ReadMails[] readMails = db.readmails.Include("mail").Where(a => a.mail.endDate < ago15Minutes).ToArray();
 
+            foreach(ActiveMails activeMail in activeMails)
+            {
+                IMailService mailServer = MailService.Create(activeMail.address);
+                var mails = mailServer.GetMails();
+                foreach (var mail in mails)
+                {
+                    mailServer.DeleteMail(mail);
+                }
+            }
+
             db.readmails.RemoveRange(readMails);
             db.activemails.RemoveRange(activeMails);
 
