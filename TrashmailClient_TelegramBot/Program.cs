@@ -171,14 +171,11 @@ namespace TrashmailClient_TelegramBot
         {
             DatabaseContext db = new DatabaseContext();
             DateTime ago15Minutes = DateTime.Now.AddMinutes(-15);
-            ActiveMails[] activeMails = db.activemails.Include("subscriber").Where(a => a.endDate < ago15Minutes).ToArray();
+            ActiveMails[] activeMails = db.activemails.Where(a => a.endDate < ago15Minutes).ToArray();
             ReadMails[] readMails = db.readmails.Include("mail").Where(a => a.mail.endDate < ago15Minutes).ToArray();
 
             db.readmails.RemoveRange(readMails);
-            foreach (ReadMails readMail in readMails)
-            {
-                db.activemails.Remove(readMail.mail);
-            }
+            db.activemails.RemoveRange(activeMails);
 
             db.SaveChanges();
         }
