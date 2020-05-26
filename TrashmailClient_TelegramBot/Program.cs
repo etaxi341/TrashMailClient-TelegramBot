@@ -248,6 +248,10 @@ namespace TrashmailClient_TelegramBot
             }
 
             string command = e.Message.Text;
+
+            if (string.IsNullOrEmpty(command))
+                return;
+
             List<string> commandParameters = new List<string>();
             if (command.StartsWith("/"))
             {
