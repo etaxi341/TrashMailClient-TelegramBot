@@ -293,16 +293,6 @@ https://www.patreon.com/etaxi341"
 
                     var currentlyActiveMails = db.activemails.Where(a => a.endDate > DateTime.Now && a.subscriber == sub).ToArray();
 
-                    if (currentlyActiveMails.Length >= 5)
-                    {
-                        bot.SendTextMessageAsync(
-                            chatId: chatID,
-                            text: "You have generated too many mails. Try again later.",
-                            replyMarkup: replyMarkup
-                        );
-                        break;
-                    }
-
                     string generatedMail = "";
                     if (command == custom)
                     {
@@ -339,6 +329,16 @@ https://www.patreon.com/etaxi341"
                     else
                     {
                         generatedMail = MailService.GenerateMail();
+                    }
+
+                    if (currentlyActiveMails.Length >= 5)
+                    {
+                        bot.SendTextMessageAsync(
+                            chatId: chatID,
+                            text: "You have generated too many mails. Try again later.",
+                            replyMarkup: replyMarkup
+                        );
+                        break;
                     }
 
                     if (MailService.Create(generatedMail) == null)
