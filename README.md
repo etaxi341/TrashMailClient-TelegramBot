@@ -16,6 +16,14 @@ This mail will be valid for 15 minutes.
 
 From now on you can use this mail for 15 minutes.
 
+## How to host it yourself?
+
+1. Download the newest Version of the Bot [here](https://github.com/etaxi341/TrashMailClient-TelegramBot/releases)
+2. Create a Telegram bot by messaging @BotFather on Telegram
+3. Add the HTTP API token from your TelegramBot to the startup parameters of the program
+4. Run the program
+5. Now you can start messaging your Bot
+
 
 ## Delivery options
 ### Automatically confirm mail
