@@ -1,4 +1,4 @@
-﻿using DataManager.Data;
+using DataManager.Data;
 using DataManager.Models;
 using Mail_Crawler;
 using Microsoft.EntityFrameworkCore;
@@ -179,6 +179,10 @@ namespace TrashmailClient_TelegramBot
             foreach(ActiveMails activeMail in activeMails)
             {
                 IMailService mailServer = MailService.Create(activeMail.address);
+
+                if (mailServer == null)
+                    continue;
+
                 var mails = mailServer.GetMails();
                 foreach (var mail in mails)
                 {

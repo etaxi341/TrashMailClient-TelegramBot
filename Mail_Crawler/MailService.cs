@@ -11,7 +11,7 @@ namespace Mail_Crawler
     {
         #region MailProvider
         public static readonly Dictionary<string, string[]> mailProviders = new Dictionary<string, string[]>{
-            { "postfach2go",  new string[]{ "postfach2go.de", "mailbox2go.de", "briefkasten2go.de" } },
+            //{ "postfach2go",  new string[]{ "postfach2go.de", "mailbox2go.de", "briefkasten2go.de" } },
             { "trashmailgenerator",  new string[]{ "trashmailgenerator.de" } },
         };
 
@@ -20,11 +20,11 @@ namespace Mail_Crawler
         public static IMailService Create(string address)
         {
             IMailService mailService = null;
-            if (mailProviders["postfach2go"].Any(p => address.EndsWith("@" + p)))
-            {
-                var serviceTemp = new MailServicePostfach2Go();
-                mailService = serviceTemp;
-            }
+            //if (mailProviders["postfach2go"].Any(p => address.EndsWith("@" + p)))
+            //{
+            //    var serviceTemp = new MailServicePostfach2Go();
+            //    mailService = serviceTemp;
+            //}
             if (mailProviders["trashmailgenerator"].Any(p => address.EndsWith("@" + p)))
             {
                 var serviceTemp = new MailServiceTrashMailGenerator();
