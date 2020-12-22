@@ -20,6 +20,7 @@ namespace TrashmailClient_TelegramBot
 
         #region COMMANDS
         const string start = "/start";
+        const string help = "/help";
         const string generate = "/generate";
         const string options = "/options";
         const string custom = "/custom";
@@ -267,6 +268,7 @@ namespace TrashmailClient_TelegramBot
             switch (command)
             {
                 case start:
+                case help:
                     bot.SendTextMessageAsync(
                         chatId: chatID,
                         text:
