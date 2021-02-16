@@ -38,7 +38,7 @@ The Bot is based on external trashmail services. This helps me to reduce cost an
 2. Press ```Start``` on the bottom of your screen
 3. Select one of the delivery options
     ```
-    Automatically confirm - Only clicks all link in recieved mails
+    Automatically confirm - Only clicks all links in recieved mails
     Show - Displays recieved mails
     Show only links - Grabs all links from the mail and displays them
     ```
