@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Args;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TrashmailClient_TelegramBot
@@ -28,20 +29,27 @@ namespace TrashmailClient_TelegramBot
         const string show = "Show";
         const string listlinks = "Show only links";
         const string generatemail = "Generate new mail";
+        const string refresh = "Refresh mail";
         #endregion
 
         static readonly ReplyKeyboardMarkup replyMarkup = new ReplyKeyboardMarkup(
             keyboardRow: new[] { new KeyboardButton(generatemail) },
             resizeKeyboard: true,
-            oneTimeKeyboard: true
+            oneTimeKeyboard: false
         );
 
-        static readonly InlineKeyboardMarkup replyMarkupOptions = new InlineKeyboardMarkup(
+        static readonly InlineKeyboardMarkup recieveOptions = new InlineKeyboardMarkup(
         new InlineKeyboardButton[][]
         {
             new [] { InlineKeyboardButton.WithCallbackData(autoconfirm) },
             new [] { InlineKeyboardButton.WithCallbackData(show) },
             new [] { InlineKeyboardButton.WithCallbackData(listlinks) }
+        });
+
+        static readonly InlineKeyboardMarkup refreshOptions = new InlineKeyboardMarkup(
+        new InlineKeyboardButton[][]
+        {
+            new [] { InlineKeyboardButton.WithCallbackData(refresh) }
         });
 
         static void Main(string[] args)
@@ -57,7 +65,7 @@ namespace TrashmailClient_TelegramBot
             {
                 botToken = args[0];
             }
-            
+
             bot = new TelegramBotClient(botToken);
             bot.OnMessage += Bot_OnMessage;
             bot.OnCallbackQuery += Bot_OnCallbackQuery;
@@ -102,7 +110,8 @@ namespace TrashmailClient_TelegramBot
                     messageId: activeMail.messageID,
                     text: activeMail.address + Environment.NewLine + suffix
                 );
-            } catch { }
+            }
+            catch { }
 
             try
             {
@@ -173,12 +182,18 @@ namespace TrashmailClient_TelegramBot
         static void DeleteOldDbEntries()
         {
             DatabaseContext db = new DatabaseContext();
-            DateTime ago15Minutes = DateTime.Now.AddMinutes(-15);
-            ActiveMails[] activeMails = db.activemails.Where(a => a.endDate < ago15Minutes).ToArray();
-            ReadMails[] readMails = db.readmails.Include("mail").Where(a => a.mail.endDate < ago15Minutes).ToArray();
+            ActiveMails[] activeMails = db.activemails.Include("subscriber").Where(a => a.endDate < DateTime.Now).ToArray();
+            ReadMails[] readMails = db.readmails.Include("mail").Where(a => a.mail.endDate < DateTime.Now).ToArray();
 
-            foreach(ActiveMails activeMail in activeMails)
+            foreach (ActiveMails activeMail in activeMails)
             {
+                bot.EditMessageTextAsync(
+                    chatId: activeMail.subscriber.chatID,
+                    messageId: activeMail.messageID,
+                    text: activeMail.address + Environment.NewLine + "This mail has run out of time",
+                    replyMarkup: refreshOptions
+                );
+
                 IMailService mailServer = MailService.Create(activeMail.address);
 
                 if (mailServer == null)
@@ -232,6 +247,10 @@ namespace TrashmailClient_TelegramBot
                         text: "Thank you, I will filter out all the links in future mails and send them to you!",
                         replyMarkup: replyMarkup
                     );
+                    break;
+                case refresh:
+                    string originalMail = e.CallbackQuery.Message.Text.Split("\n")[0];
+                    AnswerGenerateMail(db, sub, chatID, custom, originalMail, e.CallbackQuery.Message.MessageId);
                     break;
             }
 
@@ -290,88 +309,109 @@ https://www.patreon.com/etaxi341"
                     bot.SendTextMessageAsync(
                         chatId: chatID,
                         text: "What should I do with mails?",
-                        replyMarkup: replyMarkupOptions
+                        replyMarkup: recieveOptions
                     );
                     break;
                 case generate:
                 case generatemail:
                 case custom:
-
-                    var currentlyActiveMails = db.activemails.Where(a => a.endDate > DateTime.Now && a.subscriber == sub).ToArray();
-
-                    string generatedMail = "";
-                    if (command == custom)
-                    {
-                        if (commandParameters.Count > 0)
-                        {
-                            generatedMail = commandParameters[0];
-                        }
-                        else
-                        {
-                            string botText = "This is not how you use this command." + Environment.NewLine + "Try this:" + Environment.NewLine + Environment.NewLine + "/custom <user@domain>" + Environment.NewLine + Environment.NewLine + "Valid domains are:" + Environment.NewLine;
-
-                            string exampleDomain = "";
-                            foreach(var service in MailService.mailProviders.Keys)
-                            {
-                                foreach(string domain in MailService.mailProviders[service])
-                                {
-                                    if (string.IsNullOrEmpty(exampleDomain))
-                                        exampleDomain = domain;
-                                    botText += domain + Environment.NewLine;
-                                }
-                            }
-
-                            botText += "For example:" + Environment.NewLine + "abc123@" + exampleDomain;
-
-
-                            bot.SendTextMessageAsync(
-                                chatId: chatID,
-                                text: botText,
-                                replyMarkup: replyMarkup
-                            );
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        generatedMail = MailService.GenerateMail();
-                    }
-
-                    if (currentlyActiveMails.Length >= 5)
-                    {
-                        bot.SendTextMessageAsync(
-                            chatId: chatID,
-                            text: "You have generated too many mails. Try again later.",
-                            replyMarkup: replyMarkup
-                        );
-                        break;
-                    }
-
-                    if (MailService.Create(generatedMail) == null)
-                    {
-                        bot.SendTextMessageAsync(
-                            chatId: chatID,
-                            text: generatedMail + " is not a valid address!"
-                        );
-                        break;
-                    }
-
-                    var result = bot.SendTextMessageAsync(
-                        chatId: chatID,
-                        text: generatedMail + Environment.NewLine + "This mail will be valid for another 15 minutes"
-                    ).Result;
-
-                    ActiveMails activeMail = new ActiveMails();
-                    activeMail.address = generatedMail;
-                    activeMail.subscriber = sub;
-                    activeMail.messageID = result.MessageId;
-                    activeMail.endDate = DateTime.Now.AddMinutes(15);
-
-                    db.activemails.Add(activeMail);
+                    string customMail = "";
+                    if (commandParameters != null && commandParameters.Count > 0)
+                        customMail = commandParameters[0];
+                    AnswerGenerateMail(db, sub, chatID, command, customMail);
                     break;
             }
 
             db.SaveChanges();
+        }
+
+        static void AnswerGenerateMail(DatabaseContext db, Subscribers sender, long chatID, string command, string customMail, int messageID = 0)
+        {
+            var currentlyActiveMails = db.activemails.Where(a => a.endDate > DateTime.Now && a.subscriber == sender).ToArray();
+
+            string generatedMail = "";
+            if (command == custom)
+            {
+                if (!string.IsNullOrEmpty(customMail))
+                {
+                    generatedMail = customMail;
+                }
+                else
+                {
+                    string botText = "This is not how you use this command." + Environment.NewLine + "Try this:" + Environment.NewLine + Environment.NewLine + "/custom <user@domain>" + Environment.NewLine + Environment.NewLine + "Valid domains are:" + Environment.NewLine;
+
+                    string exampleDomain = "";
+                    foreach (var service in MailService.mailProviders.Keys)
+                    {
+                        foreach (string domain in MailService.mailProviders[service])
+                        {
+                            if (string.IsNullOrEmpty(exampleDomain))
+                                exampleDomain = domain;
+                            botText += domain + Environment.NewLine;
+                        }
+                    }
+
+                    botText += "For example:" + Environment.NewLine + "abc123@" + exampleDomain;
+
+
+                    bot.SendTextMessageAsync(
+                        chatId: chatID,
+                        text: botText,
+                        replyMarkup: replyMarkup
+                    );
+                    return;
+                }
+            }
+            else
+            {
+                generatedMail = MailService.GenerateMail();
+            }
+
+            if (currentlyActiveMails.Length >= 5)
+            {
+                bot.SendTextMessageAsync(
+                    chatId: chatID,
+                    text: "You have generated too many mails. Try again later.",
+                    replyMarkup: replyMarkup
+                );
+                return;
+            }
+
+            if (MailService.Create(generatedMail) == null)
+            {
+                bot.SendTextMessageAsync(
+                    chatId: chatID,
+                    text: generatedMail + " is not a valid address!"
+                );
+                return;
+            }
+
+            Message result = null;
+
+            if (messageID == 0)
+            {
+                result = bot.SendTextMessageAsync(
+                    chatId: chatID,
+                    text: generatedMail + Environment.NewLine + "This mail will be valid for another 15 minutes"
+                ).Result;
+            }
+            else
+            {
+                result = bot.EditMessageTextAsync(
+                    chatId: chatID,
+                    messageId: messageID,
+                    text: generatedMail + Environment.NewLine + "This mail will be valid for another 15 minutes"
+                ).Result;
+            }
+
+            ActiveMails activeMail = new ActiveMails();
+            activeMail.address = generatedMail;
+            activeMail.subscriber = sender;
+            activeMail.messageID = result.MessageId;
+            activeMail.endDate = DateTime.Now.AddMinutes(15);
+
+            db.activemails.Add(activeMail);
+            return;
         }
     }
 }
