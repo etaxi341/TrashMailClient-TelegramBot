@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
@@ -18,6 +19,7 @@ namespace TrashmailClient_TelegramBot
     class Program
     {
         static TelegramBotClient bot;
+        static User botUser;
 
         #region COMMANDS
         const string start = "/start";
@@ -52,7 +54,7 @@ namespace TrashmailClient_TelegramBot
             new [] { InlineKeyboardButton.WithCallbackData(refresh) }
         });
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             string botToken;
 
@@ -70,6 +72,8 @@ namespace TrashmailClient_TelegramBot
             bot.OnMessage += Bot_OnMessage;
             bot.OnCallbackQuery += Bot_OnCallbackQuery;
             bot.StartReceiving();
+
+            botUser = await bot.GetMeAsync();
 
             while (true)
             {
@@ -289,6 +293,8 @@ namespace TrashmailClient_TelegramBot
 
             if (string.IsNullOrEmpty(command))
                 return;
+
+            command = command.ToLower().Replace("@" + botUser.Username.ToLower(), "");
 
             List<string> commandParameters = new List<string>();
             if (command.StartsWith("/"))
