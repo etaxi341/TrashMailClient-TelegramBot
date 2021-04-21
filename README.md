@@ -28,17 +28,17 @@
 
 This is a Bot that allows you to generate a temporary trashmail. This mail will be valid for 15 minutes.
 
-The Bot is based on external trashmail services. This helps me to reduce cost and allows me to implement domains by adding new services.
+The Bot is based on external trashmail services. This helps me to reduce costs and allows me to implement domains by adding new services.
 
 
 
 ## Usage
 
 1. Write a message to [@TrashMailClient_Bot](https://t.me/TrashMailClient_Bot/)
-2. Press ```Start``` on the bottom of your screen
+2. Press ```Start``` at the bottom of your screen
 3. Select one of the delivery options
     ```
-    Automatically confirm - Only clicks all links in recieved mails
+    Automatically confirm - Only clicks all links in received mails
     Show - Displays recieved mails
     Show only links - Grabs all links from the mail and displays them
     ```
@@ -60,7 +60,7 @@ From now on you can use this mail for 15 minutes.
 
 
 
-## Buit With
+## Built With
 - [EntityFrameworkCore SQLite](https://github.com/dotnet/efcore)
 - [Newtonsoft Json](https://github.com/JamesNK/Newtonsoft.Json)
 - [HtmlAgilityPack](https://github.com/zzzprojects/html-agility-pack)
