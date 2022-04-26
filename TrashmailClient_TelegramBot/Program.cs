@@ -11,7 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Args;
+using Telegram.Bot.Exceptions;
+using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TrashmailClient_TelegramBot
@@ -34,11 +37,11 @@ namespace TrashmailClient_TelegramBot
         const string refresh = "Refresh mail";
         #endregion
 
-        static readonly ReplyKeyboardMarkup replyMarkup = new ReplyKeyboardMarkup(
-            keyboardRow: new[] { new KeyboardButton(generatemail) },
-            resizeKeyboard: true,
-            oneTimeKeyboard: false
-        );
+        static readonly ReplyKeyboardMarkup replyMarkup = new ReplyKeyboardMarkup(keyboardRow: new[] { new KeyboardButton(generatemail) })
+        {
+            ResizeKeyboard = true,
+            OneTimeKeyboard = false
+        };
 
         static readonly InlineKeyboardMarkup recieveOptions = new InlineKeyboardMarkup(
         new InlineKeyboardButton[][]
@@ -68,10 +71,14 @@ namespace TrashmailClient_TelegramBot
                 botToken = args[0];
             }
 
+            using CancellationTokenSource cts = new();
+            ReceiverOptions receiverOptions = new() { AllowedUpdates = { } };
+
             bot = new TelegramBotClient(botToken);
-            bot.OnMessage += Bot_OnMessage;
-            bot.OnCallbackQuery += Bot_OnCallbackQuery;
-            bot.StartReceiving();
+            bot.StartReceiving(Bot_HandleUpdateAsync,
+                               Bot_HandleErrorAsync,
+                               receiverOptions,
+                               cts.Token);
 
             botUser = await bot.GetMeAsync();
 
@@ -171,7 +178,7 @@ namespace TrashmailClient_TelegramBot
                     Thread.Sleep(1000);
                 }
             }
-            catch (Telegram.Bot.Exceptions.ApiRequestException e)
+            catch (ApiRequestException)
             {
                 var readmails = db.readmails.Where(r => r.mail == activeMail).ToList();
                 db.readmails.RemoveRange(readmails);
@@ -222,22 +229,68 @@ namespace TrashmailClient_TelegramBot
             db.SaveChanges();
         }
 
-        private static void Bot_OnCallbackQuery(object sender, CallbackQueryEventArgs e)
+        public static Task Bot_HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
         {
-            long chatID = e.CallbackQuery.Message.Chat.Id;
-            
+            var ErrorMessage = exception switch
+            {
+                ApiRequestException apiRequestException => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
+                _ => exception.ToString()
+            };
+
+            Console.WriteLine(ErrorMessage);
+            return Task.CompletedTask;
+        }
+
+        public static async Task Bot_HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        {
+            var handler = update.Type switch
+            {
+                // UpdateType.Unknown:
+                // UpdateType.ChannelPost:
+                // UpdateType.EditedChannelPost:
+                // UpdateType.ShippingQuery:
+                // UpdateType.PreCheckoutQuery:
+                // UpdateType.Poll:
+                UpdateType.Message => Bot_OnMessage(botClient, update.Message!),
+                //UpdateType.EditedMessage:
+                UpdateType.CallbackQuery => Bot_OnCallbackQuery(botClient, update.CallbackQuery!),
+                //UpdateType.InlineQuery:
+                //UpdateType.ChosenInlineResult:
+                _ => UnknownUpdateHandlerAsync(botClient, update)
+            };
+
+            try
+            {
+                await handler;
+            }
+            catch (Exception exception)
+            {
+                await Bot_HandleErrorAsync(botClient, exception, cancellationToken);
+            }
+        }
+
+        private static Task UnknownUpdateHandlerAsync(ITelegramBotClient botClient, Update update)
+        {
+            Console.WriteLine($"Unknown update type: {update.Type}");
+            return Task.CompletedTask;
+        }
+
+        private static Task Bot_OnCallbackQuery(object sender, CallbackQuery callback)
+        {
+            long chatID = callback.Message.Chat.Id;
+
             DatabaseContext db = new DatabaseContext();
             Subscribers sub = db.subscribers.Where(s => s.chatID == chatID).FirstOrDefault();
 
             try
             {
-                switch (e.CallbackQuery.Data)
+                switch (callback.Data)
                 {
                     case autoconfirm:
                         sub.mailprocess = Subscribers.MailProcess.autoconfirm;
 
                         bot.AnswerCallbackQueryAsync(
-                            callbackQueryId: e.CallbackQuery.Id,
+                            callbackQueryId: callback.Id,
                             text: "Thank you, all future mails will be automatically confirmed!"
                         );
                         break;
@@ -245,7 +298,7 @@ namespace TrashmailClient_TelegramBot
                         sub.mailprocess = Subscribers.MailProcess.read;
 
                         bot.AnswerCallbackQueryAsync(
-                            callbackQueryId: e.CallbackQuery.Id,
+                            callbackQueryId: callback.Id,
                             text: "Thank you, I will send all future mails to you!"
                         );
                         break;
@@ -253,17 +306,17 @@ namespace TrashmailClient_TelegramBot
                         sub.mailprocess = Subscribers.MailProcess.readlinks;
 
                         bot.AnswerCallbackQueryAsync(
-                            callbackQueryId: e.CallbackQuery.Id,
+                            callbackQueryId: callback.Id,
                             text: "Thank you, I will filter out all the links in future mails and send them to you!"
                         );
                         break;
                     case refresh:
-                        string originalMail = e.CallbackQuery.Message.Text.Split("\n")[0];
+                        string originalMail = callback.Message.Text.Split("\n")[0];
 
                         bot.AnswerCallbackQueryAsync(
-                            callbackQueryId: e.CallbackQuery.Id
+                            callbackQueryId: callback.Id
                         );
-                        AnswerGenerateMail(db, sub, chatID, custom, originalMail, e.CallbackQuery.Message.MessageId);
+                        AnswerGenerateMail(db, sub, chatID, custom, originalMail, callback.Message.MessageId);
                         break;
                 }
             }
@@ -273,11 +326,12 @@ namespace TrashmailClient_TelegramBot
             }
 
             db.SaveChanges();
+            return Task.CompletedTask;
         }
 
-        private static void Bot_OnMessage(object sender, MessageEventArgs e)
+        private static Task Bot_OnMessage(object sender, Message message)
         {
-            long chatID = e.Message.Chat.Id;
+            long chatID = message.Chat.Id;
 
             DatabaseContext db = new DatabaseContext();
             Subscribers sub = db.subscribers.Where(s => s.chatID == chatID).FirstOrDefault();
@@ -289,10 +343,10 @@ namespace TrashmailClient_TelegramBot
                 db.subscribers.Add(sub);
             }
 
-            string command = e.Message.Text;
+            string command = message.Text;
 
             if (string.IsNullOrEmpty(command))
-                return;
+                return Task.CompletedTask;
 
             command = command.ToLower().Replace("@" + botUser.Username.ToLower(), "");
 
@@ -350,6 +404,7 @@ https://www.patreon.com/etaxi341"
             }
 
             db.SaveChanges();
+            return Task.CompletedTask;
         }
 
         static void AnswerGenerateMail(DatabaseContext db, Subscribers sender, long chatID, string command, string customMail, int messageID = 0)

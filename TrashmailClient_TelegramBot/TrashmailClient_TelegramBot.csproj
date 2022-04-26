@@ -1,17 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net6.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Telegram.Bot" Version="15.5.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Telegram.Bot" Version="17.0.0" />
+		<PackageReference Include="Telegram.Bot.Extensions.Polling" Version="1.0.2" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\DataManager\DataManager.csproj" />
-    <ProjectReference Include="..\Mail_Crawler\Mail_Crawler.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\DataManager\DataManager.csproj" />
+		<ProjectReference Include="..\Mail_Crawler\Mail_Crawler.csproj" />
+	</ItemGroup>
 
 </Project>
